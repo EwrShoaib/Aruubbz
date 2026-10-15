@@ -1,115 +1,156 @@
-const balances = global.slotBalances || (global.slotBalances = {});
-
 module.exports = {
-config: {
-name: "slot",
-version: "3.0.0",
-author: "ariYa'n bb'z 🚩",
-countDown: 3,
-role: 0,
-description: "Slot machine betting game",
-category: "game",
-guide: "{pn} [amount]\nExample: {pn} 1m"
-},
+  config: {
+    name: "slot",
+    version: "9.0",
+    author: "Ariyan Ahmed",
+    role: 0,
+    category: "game",
+    shortDescription: "🎰 Animated Slot (Final Stable)"
+  },
 
-onStart: async function ({ message, args, event }) {
-const id = event.senderID;
+  onStart: async function ({ message, event, args, usersData, threadsData, api }) {
+    const { senderID, threadID } = event;
 
-const amounts = {
-  "1m": 1e6,
-  "2m": 2e6,
-  "5m": 5e6,
-  "10m": 1e7,
-  "20m": 2e7,
-  "50m": 5e7,
-  "100m": 1e8,
-  "200m": 2e8,
-  "500m": 5e8,
-  "1b": 1e9,
-  "2b": 2e9,
-  "5b": 5e9,
-  "10b": 1e10,
-  "20b": 2e10,
-  "50b": 5e10,
-  "100b": 1e11,
-  "200b": 2e11,
-  "500b": 5e11,
-  "1t": 1e12,
-  "2t": 2e12,
-  "5t": 5e12,
-  "10t": 1e13,
-  "20t": 2e13,
-  "50t": 5e13,
-  "100t": 1e14
-};
+    if (!global.slotCooldown) global.slotCooldown = {};
+    if (global.slotCooldown[senderID] && Date.now() - global.slotCooldown[senderID] < 3000)
+      return message.reply("⏳ | 𝐏𝐥𝐞𝐚𝐬𝐞 𝐖𝐚𝐢𝐭 𝟑 𝐒𝐞𝐜𝐨𝐧𝐝𝐬..!");
+    
+    global.slotCooldown[senderID] = Date.now();
 
-const input = (args[0] || "").toLowerCase();
-const bet = amounts[input];
+    let input = args[0];
+    if (!input) return message.reply("❌ | 𝐄𝐧𝐭𝐞𝐫 𝐛𝐞𝐭 𝐚𝐦𝐨𝐮𝐧𝐭..! Example: slot 1k");
 
-if (!bet) {
-  return message.reply(
-    "🎰 SLOT MACHINE\n\n" +
-    "💰 Available bets:\n" +
-    "1m, 2m, 5m, 10m, 20m, 50m, 100m,\n" +
-    "200m, 500m, 1b, 2b, 5b, 10b, 20b,\n" +
-    "50b, 100b, 200b, 500b, 1t, 2t, 5t,\n" +
-    "10t, 20t, 50t, 100t\n\n" +
-    "Example: slot 1m"
-  );
-}
+    let bet = input.toLowerCase().endsWith("t") ? parseFloat(input)*1e12 :
+              input.toLowerCase().endsWith("b") ? parseFloat(input)*1e9 :
+              input.toLowerCase().endsWith("m") ? parseFloat(input)*1e6 :
+              input.toLowerCase().endsWith("k") ? parseFloat(input)*1000 :
+              parseFloat(input);
 
-balances[id] ??= 1e9;
+    if (isNaN(bet) || bet < 1) return message.reply("❌ | 𝐌𝐢𝐧𝐢𝐦𝐮𝐦 𝐛𝐞𝐭 𝐢𝐬 𝟏..!💰");
+    if (bet > 1e12) return message.reply("❌ | 𝐌𝐚𝐱 𝟏𝐓..!💰");
 
-if (balances[id] < bet) {
-  return message.reply(
-    `❌ Not enough balance!\n\n` +
-    `💵 Your Balance: ${balances[id].toLocaleString("en-US")}\n` +
-    `🎯 Your Bet: ${bet.toLocaleString("en-US")}`
-  );
-}
+    let user = await usersData.get(senderID);
+    if (!user || bet > user.money)
+      return message.reply("❌ | 𝐍𝐨𝐭 𝐞𝐧𝐨𝐮𝐠𝐡 𝐦𝐨𝐧𝐞𝐲..!💰");
 
-const symbols = ["🍒", "🍋", "🍉", "⭐", "💎", "7️⃣"];
+    let data = await threadsData.get(threadID, "data.slotData") || {};
 
-const reels = Array.from(
-  { length: 3 },
-  () => symbols[Math.floor(Math.random() * symbols.length)]
-);
+    if (!data[senderID]) data[senderID] = { spins: 40, lastReset: Date.now() };
 
-let multiplier = 0;
-let result;
+    if (Date.now() - data[senderID].lastReset > 3600000)
+      data[senderID] = { spins: 40, lastReset: Date.now() };
 
-if (reels[0] === reels[1] && reels[1] === reels[2]) {
-  multiplier = reels[0] === "7️⃣" ? 10 : 5;
-  result = reels[0] === "7️⃣"
-    ? "💎 JACKPOT! 10x BET!"
-    : "🎉 TRIPLE MATCH! 5x BET!";
-} else if (
-  reels[0] === reels[1] ||
-  reels[1] === reels[2] ||
-  reels[0] === reels[2]
-) {
-  multiplier = 2;
-  result = "✨ TWO MATCH! 2x BET!";
-} else {
-  multiplier = 0;
-  result = "😢 YOU LOST YOUR BET!";
-}
+    if (data[senderID].spins <= 0)
+      return message.reply("⏳ | 𝐍𝐨 𝐬𝐩𝐢𝐧𝐬 𝐥𝐞𝐟𝐭..!");
 
-const winnings = bet * multiplier;
-balances[id] += winnings - bet;
+    data[senderID].spins--;
 
-return message.reply(
-  `🎰 SLOT MACHINE\n\n` +
-  `╔══════════════════╗\n` +
-  `║ ${reels.join(" │ ")} ║\n` +
-  `╚══════════════════╝\n\n` +
-  `${result}\n\n` +
-  `🎯 Bet: ${bet.toLocaleString("en-US")}\n` +
-  `💰 Payout: ${winnings.toLocaleString("en-US")}\n` +
-  `📊 Net: ${((multiplier - 1) * bet).toLocaleString("en-US")}\n` +
-  `🏦 Balance: ${balances[id].toLocaleString("en-US")}\n\n` +
-  `🔁 Play again: slot ${input}`
-);
+    const icons = ["🍊","🍉","💚","💛","💜","❤️","💎","🍇","🍒"];
+    const roll = () => icons[Math.floor(Math.random() * icons.length)];
 
-}
+    let info = await message.reply(`
+╔════════════════════╗
+    🎰♻️ 𝐒𝐋𝐎𝐓 𝐌𝐀𝐂𝐇𝐈𝐍𝐄 ♻️🎰
+╚════════════════════╝
+
+❰ ⏳ ┃ ⏳ ┃ ⏳ ┃ ⏳ ┃ ⏳ ❱
+
+🎰 𝐒𝐩𝐢𝐧𝐧𝐢𝐧𝐠...
+━━━━━━━━━━━━━━━━━━
+`);
+
+    let msgID = info.messageID;
+
+    for (let i = 0; i < 4; i++) {
+      let spinLine = `❰ ${roll()} ┃ ${roll()} ┃ ${roll()} ┃ ${roll()} ┃ ${roll()} ❱`;
+      let spinUI = `╔════════════════════╗
+    🎰♻️ 𝐒𝐋𝐎𝐓 𝐌𝐀𝐂𝐇𝐈𝐍𝐄 ♻️🎰
+╚════════════════════╝
+
+${spinLine}
+
+🎰 𝐒𝐩𝐢𝐧𝐧𝐢𝐧𝐠...
+━━━━━━━━━━━━━━━━━━`;
+      await new Promise(r => setTimeout(r, 300));
+      try { await api.editMessage(spinUI, msgID); } catch(e) {}
+    }
+
+    let chance = Math.random();
+    let resultType;
+    if (chance < 0.08) resultType = "jackpot";
+    else if (chance < 0.25) resultType = "big";
+    else if (chance < 0.50) resultType = "good";
+    else if (chance < 0.70) resultType = "small";
+    else if (chance < 0.85) resultType = "near";
+    else resultType = "lose";
+
+    let s1 = roll(), s2 = roll(), s3 = roll(), s4 = roll(), s5 = roll();
+    if (resultType === "near") { s1 = s2 = roll(); }
+
+    let win = 0, text = "", bonus = "";
+
+    if (resultType === "jackpot") {
+      win = bet * (10 + Math.random()*5);
+      text = "💎 𝐉𝐀𝐂𝐊𝐏𝐎𝐓 💎";
+      bonus = "𝐈𝐍𝐒𝐀𝐍𝐄 𝐖𝐈𝐍!";
+    } else if (resultType === "big") {
+      win = bet * (5 + Math.random()*2);
+      text = "🎉 𝐁𝐈𝐆 𝐖𝐈𝐍 🎉";
+      bonus = "𝐇𝐮𝐠𝐞 𝐡𝐢𝐭!";
+    } else if (resultType === "good") {
+      win = bet * (2 + Math.random());
+      text = "🎊 𝐆𝐎𝐎𝐃 𝐖𝐈𝐍 🎊";
+      bonus = "𝐍𝐢𝐜𝐞!";
+    } else if (resultType === "small") {
+      win = bet * (1.2 + Math.random()*0.5);
+      text = "✨ 𝐒𝐌𝐀𝐋𝐋 𝐖𝐈𝐍 ✨";
+      bonus = "𝐋𝐮𝐜𝐤𝐲!";
+    } else if (resultType === "near") {
+      win = -bet * 0.2;
+      text = "𝐀𝐋𝐌𝐎𝐒𝐓!💐";
+      bonus = "𝐒𝐨 𝐜𝐥𝐨𝐬𝐞!";
+    } else {
+      win = -bet;
+      text = "😢 𝐋𝐎𝐒𝐓 😢";
+      bonus = "𝐓𝐫𝐲 𝐚𝐠𝐚𝐢𝐧!";
+    }
+
+    win = Math.floor(win);
+    let newBal = user.money + win;
+
+    await usersData.set(senderID, { ...user, money: newBal });
+    await threadsData.set(threadID, data, "data.slotData");
+
+    const format = n =>
+      n >= 1e12 ? (n/1e12).toFixed(2)+"T" :
+      n >= 1e9 ? (n/1e9).toFixed(2)+"B" :
+      n >= 1e6 ? (n/1e6).toFixed(2)+"M" :
+      n >= 1e3 ? (n/1e3).toFixed(2)+"K" : n;
+
+    let final = `╔════════════════════╗
+    🔰♻️ 𝐒𝐋𝐎𝐓 𝐌𝐀𝐂𝐇𝐈𝐍𝐄 ♻️🔰
+╚════════════════════╝
+
+❰ ${s1} ┃ ${s2} ┃ ${s3} ┃ ${s4} ┃ ${s5} ❱
+
+━━━━━━━━━━━━━━━━━━
+🎯 𝐑𝐄𝐒𝐔𝐋𝐓: ➤  ${text}
+
+${win>0 ? `🟢 𝐖𝐈𝐍: ➤ 『 $${format(win)} 』` : `🔴 𝐋𝐎𝐒𝐒: ➤ 『 $${format(-win)} 』`}
+
+💰 𝐁𝐀𝐋𝐀𝐍𝐂𝐄: ➤ 『 $${format(newBal)} 』
+
+🎲 𝐒𝐏𝐈𝐍𝐒: ➤ 『 ${data[senderID].spins}/40 』
+
+💡『 ${bonus} 』
+━━━━━━━━━━━━━━━━━━`;
+
+    if (resultType === "jackpot") await message.reply("💎💎 𝐉𝐀𝐂𝐊𝐏𝐎𝐓 💎💎");
+
+    try {
+      await api.editMessage(final, msgID);
+    } catch(e) {
+      return message.reply(final);
+    }
+  }
 };
