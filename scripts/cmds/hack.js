@@ -1,52 +1,66 @@
 module.exports = {
 config: {
 name: "hack",
-version: "2.0.0",
+version: "3.0.0",
 author: "ariYa'n bb'z 🚩",
 countDown: 5,
 role: 0,
-description: "Hacker prank with reply support",
+description: "Hacker profile prank",
 category: "fun",
 guide: "{pn} (reply to a message)"
 },
 
-onStart: async function ({ message, event, usersData }) {
+onStart: async function ({ message, event, api, usersData }) {
 const targetID =
 event.messageReply?.senderID || event.senderID;
 
 let name = "Unknown User";
+let avatar = "";
 
 try {
-  name = await usersData.getName(targetID);
+  const info = await api.getUserInfo(targetID);
+  const user = info[targetID];
+
+  if (user) {
+    name = user.name || name;
+    avatar = user.thumbSrc || user.profileUrl || "";
+  }
 } catch (e) {}
 
-await message.reply(
-  `╭━━━『 ☠️ HACKER MODE 』━━━╮\n` +
-  `┃ 🎯 Target: ${name}\n` +
-  `┃ 🔌 Connecting to system...\n` +
-  `╰━━━━━━━━━━━━━━━━━━━━━━╯`
-);
+if (name === "Unknown User") {
+  try {
+    name = await usersData.getName(targetID);
+  } catch (e) {}
+}
 
-const steps = [
-  "🔍 Scanning target...\n[██░░░░░░░░] 20%",
-  "🔓 Bypassing firewall...\n[████░░░░░░] 40%",
-  "📡 Connecting to mainframe...\n[██████░░░░] 60%",
-  "💻 Running simulation...\n[████████░░] 80%",
-  "✅ Simulation complete!\n[██████████] 100%"
-];
+const result =
+  "╔══════════════════════╗\n" +
+  "      ☠️ HACK SUCCESSFUL\n" +
+  "╚══════════════════════╝\n\n" +
+  `👤 TARGET: ${name}\n` +
+  `🆔 ID: ${targetID}\n\n` +
+  "🔓 PROFILE SCAN: COMPLETE\n" +
+  "💻 SYSTEM ACCESS: SIMULATED\n" +
+  "⚡ STATUS: SUCCESSFUL\n\n" +
+  "😈 TARGET IDENTIFIED!";
 
-for (const step of steps) {
-  await new Promise(resolve => setTimeout(resolve, 1200));
-  await message.reply(step);
+// Try to send the target's profile photo with the result.
+if (avatar && typeof api.sendMessage === "function") {
+  try {
+    return api.sendMessage(
+      {
+        body: result,
+        attachment: await global.utils.getStreamFromURL(avatar)
+      },
+      event.threadID,
+      event.messageID
+    );
+  } catch (e) {}
 }
 
 return message.reply(
-  `😈 TARGET: ${name}\n\n` +
-  `💀 SYSTEM ACCESS: SIMULATED\n` +
-  `🛡️ REAL STATUS: SAFE\n\n` +
-  `🤣 PRANK SUCCESSFUL!\n` +
-  `কোনো account hack করা হয়নি!\n\n` +
-  `👑 Powered by BOT`
+  result +
+  "\n\n📸 Profile photo API unavailable."
 );
 
 }
