@@ -1,134 +1,115 @@
-const axios = require("axios");
+const balances = global.slotBalances || (global.slotBalances = {});
 
-// 🔹 SAME API
-const API_URL = "https://balance-bot-api.onrender.com";
-
-// 🔹 Get balance
-async function getBalance(userID) {
-  try {
-    const res = await axios.get(`${API_URL}/api/balance/${userID}`);
-    return res.data.balance || 100;
-  } catch {
-    return 100;
-  }
-}
-
-// 🔹 Add balance
-async function winGame(userID, amount) {
-  try {
-    const res = await axios.post(`${API_URL}/api/balance/win`, { userID, amount });
-    return res.data.success ? res.data.balance : null;
-  } catch {
-    return null;
-  }
-}
-
-// 🔹 Lose balance
-async function loseGame(userID, amount) {
-  try {
-    const res = await axios.post(`${API_URL}/api/balance/lose`, { userID, amount });
-    return res.data.success ? res.data.balance : null;
-  } catch {
-    return null;
-  }
-}
-
-// 🔹 Slot Machine class
-class SlotMachine {
-  constructor() {
-    this.symbols = ["🍒","🍊","🍋","🍉","🍇","⭐","7️⃣","💎"];
-    this.payouts = {
-      "💎💎💎": 100, "7️⃣7️⃣7️⃣": 50, "⭐⭐⭐": 30,
-      "🍇🍇🍇": 20, "🍉🍉🍉": 15, "🍋🍋🍋": 10,
-      "🍊🍊🍊": 8, "🍒🍒🍒": 5
-    };
-  }
-
-  spin() {
-    const reels = [];
-    let isWin = Math.random() < 0.6; // 60% win chance
-
-    if(isWin) {
-      const winningCombos = Object.keys(this.payouts);
-      const combo = winningCombos[Math.floor(Math.random() * winningCombos.length)];
-      reels.push(...combo.split(''));
-    } else {
-      while(reels.length < 3) {
-        const symbol = this.symbols[Math.floor(Math.random() * this.symbols.length)];
-        reels.push(symbol);
-      }
-      const resultStr = reels.join('');
-      if(this.payouts[resultStr]) {
-        reels[0] = this.symbols[Math.floor(Math.random() * this.symbols.length)];
-      }
-    }
-
-    const result = reels.join('');
-    const multiplier = this.payouts[result] || 0;
-    return { reels, result, multiplier };
-  }
-}
-
-// 🔹 Format balance
-function formatBalance(num) {
-  return num.toLocaleString("en-US") + " $";
-}
-
-// 🔹 Create final spin message
-function createMessage(reels, bet, multiplier, newBalance) {
-  const spinDisplay = reels.map(r => r || "❓").join(" | ");
-  if(multiplier > 0) {
-    return `🎰 Sʟᴏᴛ Mᴀᴄʜɪɴᴇ 🎰\n\n[ ${spinDisplay} ]\n\n🎉 Win!\n💵 Bet: ${formatBalance(bet)}\n✅ Won: ${formatBalance(bet*multiplier)}\n💳 New Balance: ${formatBalance(newBalance)}`;
-  } else {
-    return `🎰 Sʟᴏᴛ Mᴀᴄʜɪɴᴇ 🎰\n\n[ ${spinDisplay} ]\n\n💀 Loss\n💰 Bet: ${formatBalance(bet)}\n❌ Won: 0 $\n💳 New Balance: ${formatBalance(newBalance)}`;
-  }
-}
-
-// 🔹 Module exports
 module.exports = {
-  config: {
-    name: "slot",
-    aliases: ["spin"],
-    version: "1.2",
-    author: "Mᴏʜᴀᴍᴍᴀᴅ Aᴋᴀsʜ",
-    role: 0,
-    shortDescription: "Slot Machine 60% Win (Reply Based)",
-    category: "economy"
-  },
+config: {
+name: "slot",
+version: "3.0.0",
+author: "ariYa'n bb'z 🚩",
+countDown: 3,
+role: 0,
+description: "Slot machine betting game",
+category: "game",
+guide: "{pn} [amount]\nExample: {pn} 1m"
+},
 
-  onStart: async function({ api, event, args }) {
-    const { threadID, senderID, messageID } = event;
+onStart: async function ({ message, args, event }) {
+const id = event.senderID;
 
-    const currentBalance = await getBalance(senderID);
-    const slot = new SlotMachine();
+const amounts = {
+  "1m": 1e6,
+  "2m": 2e6,
+  "5m": 5e6,
+  "10m": 1e7,
+  "20m": 2e7,
+  "50m": 5e7,
+  "100m": 1e8,
+  "200m": 2e8,
+  "500m": 5e8,
+  "1b": 1e9,
+  "2b": 2e9,
+  "5b": 5e9,
+  "10b": 1e10,
+  "20b": 2e10,
+  "50b": 5e10,
+  "100b": 1e11,
+  "200b": 2e11,
+  "500b": 5e11,
+  "1t": 1e12,
+  "2t": 2e12,
+  "5t": 5e12,
+  "10t": 1e13,
+  "20t": 2e13,
+  "50t": 5e13,
+  "100t": 1e14
+};
 
-    let bet = args[0]?.toLowerCase() === "max" ? Math.floor(currentBalance*0.1) : parseFloat(args[0]);
-    if(isNaN(bet) || bet < 10) bet = 10;
-    if(bet > currentBalance) return api.sendMessage(
-      `❌ Insufficient Balance\n💳 Balance: ${formatBalance(currentBalance)}\n💰 Bet: ${formatBalance(bet)}`,
-      threadID,
-      messageID // ✅ reply to command
-    );
+const input = (args[0] || "").toLowerCase();
+const bet = amounts[input];
 
-    // Initial spin message
-    const spinMsg = await api.sendMessage(
-      `🎰 Sʟᴏᴛ Mᴀᴄʜɪɴᴇ 🎰\n\n[ 🍉 | ❓ | ❓ ]\n\nSpinning...`,
-      threadID,
-      messageID // ✅ reply to command
-    );
-    await new Promise(r => setTimeout(r, 1500));
+if (!bet) {
+  return message.reply(
+    "🎰 SLOT MACHINE\n\n" +
+    "💰 Available bets:\n" +
+    "1m, 2m, 5m, 10m, 20m, 50m, 100m,\n" +
+    "200m, 500m, 1b, 2b, 5b, 10b, 20b,\n" +
+    "50b, 100b, 200b, 500b, 1t, 2t, 5t,\n" +
+    "10t, 20t, 50t, 100t\n\n" +
+    "Example: slot 1m"
+  );
+}
 
-    // Spin reels
-    const spinResult = slot.spin();
-    const winAmount = Math.floor(bet * spinResult.multiplier);
+balances[id] ??= 1e9;
 
-    // Update balance
-    let newBalance;
-    if(winAmount > 0) newBalance = await winGame(senderID, winAmount);
-    else newBalance = await loseGame(senderID, bet);
+if (balances[id] < bet) {
+  return message.reply(
+    `❌ Not enough balance!\n\n` +
+    `💵 Your Balance: ${balances[id].toLocaleString("en-US")}\n` +
+    `🎯 Your Bet: ${bet.toLocaleString("en-US")}`
+  );
+}
 
-    // Final message
-    const finalMsg = createMessage(spinResult.reels, bet, spinResult.multiplier, newBalance);
-    await api.editMessage(finalMsg, spinMsg.messageID, threadID);
-  }
+const symbols = ["🍒", "🍋", "🍉", "⭐", "💎", "7️⃣"];
+
+const reels = Array.from(
+  { length: 3 },
+  () => symbols[Math.floor(Math.random() * symbols.length)]
+);
+
+let multiplier = 0;
+let result;
+
+if (reels[0] === reels[1] && reels[1] === reels[2]) {
+  multiplier = reels[0] === "7️⃣" ? 10 : 5;
+  result = reels[0] === "7️⃣"
+    ? "💎 JACKPOT! 10x BET!"
+    : "🎉 TRIPLE MATCH! 5x BET!";
+} else if (
+  reels[0] === reels[1] ||
+  reels[1] === reels[2] ||
+  reels[0] === reels[2]
+) {
+  multiplier = 2;
+  result = "✨ TWO MATCH! 2x BET!";
+} else {
+  multiplier = 0;
+  result = "😢 YOU LOST YOUR BET!";
+}
+
+const winnings = bet * multiplier;
+balances[id] += winnings - bet;
+
+return message.reply(
+  `🎰 SLOT MACHINE\n\n` +
+  `╔══════════════════╗\n` +
+  `║ ${reels.join(" │ ")} ║\n` +
+  `╚══════════════════╝\n\n` +
+  `${result}\n\n` +
+  `🎯 Bet: ${bet.toLocaleString("en-US")}\n` +
+  `💰 Payout: ${winnings.toLocaleString("en-US")}\n` +
+  `📊 Net: ${((multiplier - 1) * bet).toLocaleString("en-US")}\n` +
+  `🏦 Balance: ${balances[id].toLocaleString("en-US")}\n\n` +
+  `🔁 Play again: slot ${input}`
+);
+
+}
 };
