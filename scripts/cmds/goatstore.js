@@ -578,4 +578,4 @@ async function runAutoSync() {
       try {
         const author = content.match(/author\s*:\s*["'`](.*?)["'`]/)?.[1]
                     || content.match(/credits\s*:\s*["'`](.*?)["'`]/)?.[1]
-                             
+           
