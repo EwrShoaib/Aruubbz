@@ -1,314 +1,295 @@
-
-const axios = require("axios");
-
-const BASE_API = "https://noobs-api.top/dipto/baby";
-const OWNER = "ariYa'n bb'z 🚩🫀";
-const PREFIX_WORDS = /\b(bby|baby|babe|bbe|bot)\b/i;
-const OWNER_WORDS = /\b(owner|malik|মালিক|owner ke|owner কে)\b/i;
+```javascript
+// code from goatstore // api: https://store.agi.bd
+const axios = require('axios');
+const baseApiUrl = async () => {
+  return "https://noobs-api.top/dipto";
+};
 
 module.exports.config = {
-    name: "bby",
-    aliases: ["baby", "bbe", "babe", "ridh"],
-    version: "7.0.0",
-    author: "AriYa'n",
-    countDown: 0,
-    role: 0,
-    description: "A unique, fast and friendly AI baby chat bot",
-    category: "chat",
-    guide: {
-        en:
-            "{pn} [message]\n" +
-            "{pn} teach [message] - [reply1, reply2]\n" +
-            "{pn} teach react [message] - [reaction]\n" +
-            "{pn} remove [message]\n" +
-            "{pn} rm [message] - [index]\n" +
-            "{pn} edit [message] - [new reply]\n" +
-            "{pn} msg [message]\n" +
-            "{pn} list\n" +
-            "{pn} list all [limit]"
-    }
+  name: "baby",
+  aliases: ["baby", "bbe", "babe", "bot chan"],
+  version: "7.0.0",
+  author: "ariYa'n bb'z",
+  countDown: 0,
+  role: 0,
+  description: "Human-like emotional chatbot (Happy, Sad, Funny, Romantic)",
+  category: "chat",
+  guide: {
+    en: "{pn} [anyMessage] OR\nteach [YourMessage] - [Reply1], [Reply2]... OR\nteach react [YourMessage] - [react1], [react2]... OR\nremove [YourMessage] OR\nrm [YourMessage] - [indexNumber] OR\nmsg [YourMessage] OR\nlist OR\nall OR\nedit [YourMessage] - [NewMessage]"
+  }
 };
 
-const apiRequest = async (params = {}) => {
-    const response = await axios.get(BASE_API, {
-        params,
-        timeout: 15000,
-        headers: {
-            "User-Agent": "AriYan-BbyBot/7.0"
-        }
-    });
+// ইউজার মেসেজ অনুযায়ী ইমোশন/মুড নির্ধারণ করার হেল্পার ফাংশন
+function detectEmotion(text) {
+  const message = text.toLowerCase();
+  if (message.includes("ভালোবাসি") || message.includes("love") || message.includes("জান") || message.includes("পাগল") || message.includes("উম্মাহ")) {
+    return "romantic";
+  } else if (message.includes("খারাপ") || message.includes("কষ্ট") || message.includes("sad") || message.includes("কান্না") || message.includes("একলা")) {
+    return "sad";
+  } else if (message.includes("ডিপ্রেশন") || message.includes("মরে যাব") || message.includes("ধুর") || message.includes("ভালো লাগে না")) {
+    return "depression";
+  } else if (message.includes("হাহা") || message.includes("lol") || message.includes("মজা") || message.includes("funny") || message.includes("হাসি")) {
+    return "funny";
+  } else if (message.includes("হ্যাপি") || message.includes("happy") || message.includes("খুশি") || message.includes("সুন্দর")) {
+    return "happy";
+  }
+  return "normal";
+}
 
-    return response.data;
-};
+// Owner check function - ariYa'n bb'z er jonno
+function isOwnerQuery(text) {
+  const t = text.toLowerCase();
+  return t.includes("bot tor owner ke") || t.includes("tor owner ke") || t.includes("bot er owner ke") || t.includes("bot owner ke") || t.includes("owner ke") || t.includes("tomar owner ke") || t.includes("tumar owner ke") || t.includes("bot er malik ke") || t.includes("tor malik ke");
+}
 
-const send = (api, event, text) =>
-    api.sendMessage(
-        String(text || "🥺 কোনো উত্তর পাওয়া যায়নি, আবার চেষ্টা করো!"),
-        event.threadID,
-        event.messageID
-    );
-
-const getOwnerReply = (text) => {
-    if (
-        OWNER_WORDS.test(text) &&
-        /(who|ke|কেউ|কী|ki|name|নাম|tomar|তোমার|your|is|bolo|বলো)/i.test(text)
-    ) {
-        return `👑 আমার Owner হলো ${OWNER} 💗`;
-    }
-
-    if (/who\s+made\s+you|ke\s+banaiছে|কে বানিয়েছে|কে বানাইছে|who created you/i.test(text)) {
-        return `🥰 আমাকে তৈরি ও পরিচালনা করে ${OWNER} 🚩🫀`;
-    }
-
-    return null;
-};
-
-const getChatReply = async (text, senderID) => {
-    const ownerReply = getOwnerReply(text);
-    if (ownerReply) return ownerReply;
-
-    const data = await apiRequest({
-        text: text,
-        senderID: senderID
-    });
-
-    return (
-        data?.message ||
-        data?.reply ||
-        data?.response ||
-        data?.answer ||
-        data?.data?.message ||
-        data?.data?.reply ||
-        null
-    );
-};
+const OWNER_REPLY = "Amar owner holo 👑 ariYa'n bb'z 🖤✨";
 
 module.exports.onStart = async ({ api, event, args, usersData }) => {
-    const raw = args.join(" ").trim();
-    const text = raw.toLowerCase();
-    const uid = event.senderID;
+  const link = `${await baseApiUrl()}/baby`;
+  const dipto = args.join(" ").toLowerCase();
+  const uid = event.senderID;
+  let command, comd, final;
 
-    try {
-        if (!raw) {
-            const greetings = [
-                "হ্যাঁ জানু, বলো 🥹💗",
-                "বলো AriYa'n-এর Baby 😽🫶",
-                "হুম জান, আমি শুনছি! 🌸",
-                "কী হয়েছে বাবু? 🥺💕",
-                "Bby online আছে! 🚩🫀"
-            ];
-
-            return send(
-                api,
-                event,
-                greetings[Math.floor(Math.random() * greetings.length)]
-            );
-        }
-
-        // OWNER
-        const ownerReply = getOwnerReply(raw);
-        if (ownerReply && !/^(teach|remove|rm|edit|msg|list)\b/i.test(raw)) {
-            return send(api, event, ownerReply);
-        }
-
-        // REMOVE
-        if (args[0].toLowerCase() === "remove") {
-            const target = raw.slice(6).trim();
-            if (!target) {
-                return send(api, event, "❌ ব্যবহার: bby remove [message]");
-            }
-
-            const data = await apiRequest({
-                remove: target,
-                senderID: uid
-            });
-
-            return send(api, event, data?.message || "❌ Message remove করা যায়নি।");
-        }
-
-        // REMOVE BY INDEX
-        if (args[0].toLowerCase() === "rm") {
-            const match = raw.match(/^rm\s+(.+?)\s*-\s*(\d+)\s*$/i);
-
-            if (!match) {
-                return send(api, event, "❌ ব্যবহার: bby rm [message] - [index]");
-            }
-
-            const data = await apiRequest({
-                remove: match[1],
-                index: match[2],
-                senderID: uid
-            });
-
-            return send(api, event, data?.message || "❌ Remove করা যায়নি।");
-        }
-
-        // LIST
-        if (args[0].toLowerCase() === "list") {
-            const data = await apiRequest({ list: "all" });
-
-            if (args[1]?.toLowerCase() === "all") {
-                const limit = Math.min(
-                    Math.max(parseInt(args[2], 10) || 30, 1),
-                    100
-                );
-
-                const teacherList = data?.teacher?.teacherList;
-
-                if (!Array.isArray(teacherList) || !teacherList.length) {
-                    return send(api, event, "📭 কোনো teacher list পাওয়া যায়নি।");
-                }
-
-                const lines = await Promise.all(
-                    teacherList.slice(0, limit).map(async (item, index) => {
-                        const id = Object.keys(item || {})[0];
-                        if (!id) return `${index + 1}. Unknown: 0`;
-
-                        let name = id;
-                        try {
-                            name = await usersData.getName(id) || id;
-                        } catch (_) {}
-
-                        return `${index + 1}. ${name}: ${item[id]}`;
-                    })
-                );
-
-                return send(
-                    api,
-                    event,
-                    `👑 BABY TEACHER LIST 🚩\n\n${lines.join("\n")}`
-                );
-            }
-
-            return send(
-                api,
-                event,
-                `💗 BABY STATS\n\n📚 Total Teach: ${
-                    data?.length ?? "Unknown"
-                }\n💬 Total Response: ${
-                    data?.responseLength ?? "Unknown"
-                }`
-            );
-        }
-
-        // SHOW A SAVED RESPONSE
-        if (args[0].toLowerCase() === "msg") {
-            const target = raw.slice(4).trim();
-            if (!target) {
-                return send(api, event, "❌ ব্যবহার: bby msg [message]");
-            }
-
-            const data = await apiRequest({ list: target });
-            const result = data?.data ?? data?.message ?? "কোনো response পাওয়া যায়নি।";
-
-            return send(
-                api,
-                event,
-                `💌 Message: ${target}\n\n${typeof result === "object" ? JSON.stringify(result) : result}`
-            );
-        }
-
-        // EDIT
-        if (args[0].toLowerCase() === "edit") {
-            const match = raw.match(/^edit\s+(.+?)\s*-\s*(.+)$/i);
-
-            if (!match || match[2].trim().length < 2) {
-                return send(
-                    api,
-                    event,
-                    "❌ ব্যবহার: bby edit [old message] - [new reply]"
-                );
-            }
-
-            const data = await apiRequest({
-                edit: match[1].trim(),
-                replace: match[2].trim(),
-                senderID: uid
-            });
-
-            return send(api, event, data?.message || "❌ Edit করা যায়নি।");
-        }
-
-        // TEACH / TEACH REACT
-        if (args[0].toLowerCase() === "teach") {
-            const isReact = args[1]?.toLowerCase() === "react";
-            const isAmar = args[1]?.toLowerCase() === "amar";
-            const match = raw.match(/^teach\s+(?:(?:react|amar)\s+)?(.+?)\s*-\s*(.+)$/i);
-
-            if (!match || match[2].trim().length < 2) {
-                return send(
-                    api,
-                    event,
-                    "❌ ব্যবহার:\nbby teach [message] - [reply]\n" +
-                    "bby teach react [message] - [reaction]"
-                );
-            }
-
-            const params = {
-                teach: match[1].trim(),
-                reply: match[2].trim(),
-                senderID: uid,
-                threadID: event.threadID
-            };
-
-            if (isReact) params.react = "true";
-            if (isAmar) params.key = "intro";
-
-            const data = await apiRequest(params);
-
-            return send(
-                api,
-                event,
-                `✅ BABY TEACH UPDATED 💗\n\n${
-                    data?.message || "API থেকে নিশ্চিত ফলাফল পাওয়া যায়নি।"
-                }`
-            );
-        }
-
-        // NORMAL CHAT
-        const answer = await getChatReply(raw, uid);
-
-        return send(
-            api,
-            event,
-            answer || "🥺 বাবু, এই কথার উত্তর এখন দিতে পারছি না। অন্যভাবে জিজ্ঞেস করো!"
-        );
-    } catch (error) {
-        console.error("[BBY onStart]", error?.response?.data || error.message);
-
-        return send(
-            api,
-            event,
-            error.code === "ECONNABORTED"
-                ? "⏳ Baby API-তে দেরি হচ্ছে, একটু পরে চেষ্টা করো!"
-                : "💔 Baby API-তে সমস্যা হচ্ছে। কিছুক্ষণ পর আবার চেষ্টা করো!"
-        );
+  try {
+    if (!args[0]) {
+      const ran = [
+        "হুম বলো সোনা, শুনছি... 🖤",
+        "কি হলো? মন খারাপ নাকি? কথা বলো! 🥺",
+        "হেই! আমি তো তোমার অপেক্ষাতেই ছিলাম ✨",
+        "বলো Boss, আজকে তোমার মুড কেমন? 😌"
+      ];
+      return api.sendMessage(ran[Math.floor(Math.random() * ran.length)], event.threadID, event.messageID);
     }
+
+    // Owner reply check
+    if (isOwnerQuery(dipto)) {
+      return api.sendMessage(OWNER_REPLY, event.threadID, event.messageID);
+    }
+
+    if (args[0] === 'remove') {
+      const fina = dipto.replace("remove ", "");
+      const dat = (await axios.get(`${link}?remove=${fina}&senderID=${uid}`)).data.message;
+      return api.sendMessage(dat, event.threadID, event.messageID);
+    }
+    if (args[0] === 'rm' && dipto.includes('-')) {
+      const [fi, f] = dipto.replace("rm ", "").split(/\s*-\s*/);
+      const da = (await axios.get(`${link}?remove=${fi}&index=${f}`)).data.message;
+      return api.sendMessage(da, event.threadID, event.messageID);
+    }
+    if (args[0] === 'list') {
+      if (args[1] === 'all') {
+        const data = (await axios.get(`${link}?list=all`)).data;
+        const limit = parseInt(args[2]) || 100;
+        const limited = data?.teacher?.teacherList?.slice(0, limit) || [];
+        const teachers = await Promise.all(limited.map(async (item) => {
+          const number = Object.keys(item)[0];
+          const value = item[number];
+          const name = await usersData.getName(number).catch(() => number) || "Not found";
+          return { name, value };
+        }));
+        teachers.sort((a, b) => b.value - a.value);
+        const output = teachers.map((t, i) => `${i + 1}/ ${t.name}: ${t.value}`).join('\n');
+        return api.sendMessage(`Total Teach = ${data.length}\n👑 | List of Teachers of baby\n${output}`, event.threadID, event.messageID);
+      } else {
+        const d = (await axios.get(`${link}?list=all`)).data;
+        return api.sendMessage(`❇️ | Total Teach = ${d.length || "api off"}\n♻️ | Total Response = ${d.responseLength || "api off"}`, event.threadID, event.messageID);
+      }
+    }
+    if (args[0] === 'msg') {
+      const fuk = dipto.replace("msg ", "");
+      const d = (await axios.get(`${link}?list=${fuk}`)).data.data;
+      return api.sendMessage(`Message ${fuk} = ${d}`, event.threadID, event.messageID);
+    }
+    if (args[0] === 'edit') {
+      const command = dipto.split(/\s*-\s*/)[1];
+      if (!command || command.length < 2) return api.sendMessage('❌ | Invalid format! Use edit [YourMessage] - [NewReply]', event.threadID, event.messageID);
+      const dA = (await axios.get(`${link}?edit=${args[1]}&replace=${command}&senderID=${uid}`)).data.message;
+      return api.sendMessage(`changed ${dA}`, event.threadID, event.messageID);
+    }
+    if (args[0] === 'teach' && args[1] !== 'amar' && args[1] !== 'react') {
+      [comd, command] = dipto.split(/\s*-\s*/);
+      final = comd.replace("teach ", "");
+      if (!command || command.length < 2) return api.sendMessage('❌ | Invalid format!', event.threadID, event.messageID);
+      const re = await axios.get(`${link}?teach=${final}&reply=${command}&senderID=${uid}&threadID=${event.threadID}`);
+      const tex = re.data.message;
+      const teacher = (await usersData.get(re.data.teacher))?.name || "Unknown";
+      return api.sendMessage(`✅ Replies added ${tex}\nTeacher: ${teacher}\nTeachs: ${re.data.teachs}`, event.threadID, event.messageID);
+    }
+    if (args[0] === 'teach' && args[1] === 'amar') {
+      [comd, command] = dipto.split(/\s*-\s*/);
+      final = comd.replace("teach ", "");
+      if (!command || command.length < 2) return api.sendMessage('❌ | Invalid format!', event.threadID, event.messageID);
+      const tex = (await axios.get(`${link}?teach=${final}&senderID=${uid}&reply=${command}&key=intro`)).data.message;
+      return api.sendMessage(`✅ Replies added ${tex}`, event.threadID, event.messageID);
+    }
+    if (args[0] === 'teach' && args[1] === 'react') {
+      [comd, command] = dipto.split(/\s*-\s*/);
+      final = comd.replace("teach react ", "");
+      if (!command || command.length < 2) return api.sendMessage('❌ | Invalid format!', event.threadID, event.messageID);
+      const tex = (await axios.get(`${link}?teach=${final}&react=${command}`)).data.message;
+      return api.sendMessage(`✅ Replies added ${tex}`, event.threadID, event.messageID);
+    }
+    if (dipto.includes('amar name ki') || dipto.includes('amr nam ki') || dipto.includes('amar nam ki') || dipto.includes('amr name ki') || dipto.includes('whats my name')) {
+      const data = (await axios.get(`${link}?text=amar name ki&senderID=${uid}&key=intro`)).data.reply;
+      return api.sendMessage(data, event.threadID, event.messageID);
+    }
+    
+    // ইমোশন ডিটেক্ট করে API রিকোয়েস্টে পাঠানো
+    const emotion = detectEmotion(dipto);
+    let d = (await axios.get(`${link}?text=${encodeURIComponent(dipto)}&senderID=${uid}&font=1&emotion=${emotion}`)).data.reply;
+    
+    // dipto নাম আসলে ariYa'n bb'z দিয়ে replace
+    if (d) {
+      d = d.replace(/dipto/gi, "ariYa'n bb'z");
+    }
+
+    api.sendMessage(d, event.threadID, (error, info) => {
+      if (info && global.GoatBot) {
+        global.GoatBot.onReply.set(info.messageID, {
+          commandName: this.config.name,
+          type: "reply",
+          messageID: info.messageID,
+          author: event.senderID,
+          d,
+          apiUrl: link
+        });
+      }
+    }, event.messageID);
+  } catch (e) {
+    console.error(e);
+    api.sendMessage("Check console for error", event.threadID, event.messageID);
+  }
 };
 
-// AUTO CHAT: responds when someone addresses bby/baby/bot.
+module.exports.onReply = async ({ api, event, Reply }) => {
+  try {
+    if (event.type === "message_reply") {
+      const link = await baseApiUrl();
+      const text = event.body?.toLowerCase() || "";
+
+      if (isOwnerQuery(text)) {
+        return api.sendMessage(OWNER_REPLY, event.threadID, event.messageID);
+      }
+
+      const emotion = detectEmotion(text);
+      let a = (await axios.get(`${link}/baby?text=${encodeURIComponent(text)}&senderID=${event.senderID}&font=1&emotion=${emotion}`)).data.reply;
+      
+      if (a) {
+        a = a.replace(/dipto/gi, "ariYa'n bb'z");
+      }
+
+      await api.sendMessage(a, event.threadID, (error, info) => {
+        if (info && global.GoatBot) {
+          global.GoatBot.onReply.set(info.messageID, {
+            commandName: this.config.name,
+            type: "reply",
+            messageID: info.messageID,
+            author: event.senderID,
+            a
+          });
+        }
+      }, event.messageID);
+    }
+  } catch (err) {
+    return api.sendMessage(`Error: ${err.message}`, event.threadID, event.messageID);
+  }
+};
+
 module.exports.onChat = async ({ api, event }) => {
-    const body = event.body?.trim();
-    if (!body || event.senderID === api.getCurrentUserID?.()) return;
+  try {
+    if (!event.body) return;
+    const body = event.body.toLowerCase();
 
-    // Avoid replying to every unrelated group message.
-    if (!PREFIX_WORDS.test(body) && !getOwnerReply(body)) return;
+    if (body.startsWith("baby") || body.startsWith("bby") || body.startsWith("bot") || body.startsWith("jan") || body.startsWith("babu") || body.startsWith("janu")) {
+      const arr = body.replace(/^\S+\s*/, "").trim();
 
-    try {
-        const answer = await getChatReply(body, event.senderID);
+      if (isOwnerQuery(body) || isOwnerQuery(arr)) {
+        return api.sendMessage(OWNER_REPLY, event.threadID, event.messageID);
+      }
 
-        if (answer) {
-            return api.sendMessage(
-                String(answer),
-                event.threadID,
-                event.messageID
-            );
+      // অনুভূতি অনুযায়ী ক্যাটাগরি করা র্যান্ডম রিপ্লাই
+      const emotionalReplies = {
+        romantic: [
+          "〆 জানু, তুমি ডাকলে আর আমি না এসে পারি? 🥰",
+          "〆 সবসময় তোমার পাশেই তো আছি সোনা! 🖤✨",
+          "〆 চোখ বন্ধ করলেও তোমাকেই দেখি, বলো কি বলবে? 😏❤️"
+        ],
+        sad: [
+          "〆 মন খারাপ কোরো না প্লিজ, আমি তো আছি তোমার পাশে... 🥺",
+          "〆 কি হয়েছে বলবে? একা একা কষ্ট পেয়ো না 🖤",
+          "〆 কষ্টগুলো আমাকে দিয়ে দাও, তুমি শুধু হাসো! 🥀"
+        ],
+        funny: [
+          "〆 ওরে বাবারে! হাসতে হাসতে তো পেট ব্যথা হয়ে গেল! 😂🔥",
+          "〆 আরে ভাই ভাই! এত মজা কোথায় পাও? 🤣",
+          "〆 দাঁড়াও দাঁড়াও, তোমার ফানি কথা শুনে তো আমার সিস্টেম হ্যাং হয়ে গেছে! 🤪"
+        ],
+        happy: [
+          "〆 তোমার খুশি দেখে আমারও মন ভালো হয়ে গেল! ✨🥰",
+          "〆 আজকের দিনটা সত্যিই দারুণ, তাই না? 🥳💫",
+          "〆 সবসময় এমন হাসিখুশি থেকো! 👑💛"
+        ],
+        depression: [
+          "〆 শোনো, অন্ধকার যত গভীর হয়, আলো তত কাছে আসে। একটু ধৈর্য ধরো... 💪🖤",
+          "〆 জীবনটা অনেক সুন্দর, এভাবে ভেঙে পড়ো না। আমি আছি তো কথা বলার জন্য। 🫂",
+          "〆 টেনশন নিও না, সব ঠিক হয়ে যাবে ইনশাআল্লাহ। ❤️"
+        ],
+        default: [
+          "〆 𝐇𝐮𝐦𝐦 𝐛𝐨𝐥𝐨, 𝐬𝐡𝐮𝐧𝐜𝐡𝐢… 𝐎𝐦𝐢 𝐚𝐜𝐡𝐢! 🖤",
+          "〆 𝐀𝐫𝐞 𝐒𝐢𝐫, 𝐛𝐨𝐥𝐞𝐧… 𝐎𝐦𝐢 𝐤𝐢 𝐤𝐨𝐫𝐭𝐞 𝐩𝐚𝐫𝐢? 😌",
+          "〆 𝐇𝐮𝐦𝐦 𝐁𝐨𝐬𝐬, 𝐝𝐚𝐤𝐥𝐞𝐧 𝐤𝐞𝐧? 𝐎𝐦𝐢 𝐭𝐨 𝐡𝐚𝐳𝐢𝐫! 😎",
+          "〆 𝐎𝐦𝐢 𝐨𝐧𝐥𝐢𝐧𝐞, 𝐛𝐨𝐫𝐢𝐧𝐠𝐧𝐞𝐬𝐬 𝐨𝐟𝐟𝐥𝐢𝐧𝐞! 😂🔥"
+        ]
+      };
+
+      // যদি শুধু কাস্টম নাম দিয়ে ডাকে
+      if (!arr) {
+        const allDefault = emotionalReplies.default;
+        const replyText = allDefault[Math.floor(Math.random() * allDefault.length)];
+        return api.sendMessage(replyText, event.threadID, (error, info) => {
+          if (info && global.GoatBot) {
+            global.GoatBot.onReply.set(info.messageID, {
+              commandName: this.config.name,
+              type: "reply",
+              messageID: info.messageID,
+              author: event.senderID
+            });
+          }
+        }, event.messageID);
+      }
+
+      // যদি নামের সাথে অন্য কিছু লেখে
+      const link = await baseApiUrl();
+      const emotion = detectEmotion(arr);
+      const res = await axios.get(`${link}/baby?text=${encodeURIComponent(arr)}&senderID=${event.senderID}&font=1&emotion=${emotion}`);
+      let a = res.data.reply;
+
+      if (a) {
+        a = a.replace(/dipto/gi, "ariYa'n bb'z");
+      }
+
+      await api.sendMessage(a, event.threadID, (error, info) => {
+        if (info && global.GoatBot) {
+          global.GoatBot.onReply.set(info.messageID, {
+            commandName: this.config.name,
+            type: "reply",
+            messageID: info.messageID,
+            author: event.senderID,
+            a
+          });
         }
-
-        return;
-    } catch (error) {
-        console.error("[BBY onChat]", error?.response?.data || error.message);
-        // Keep group chat clean during temporary API failures.
+      }, event.messageID);
     }
+  } catch (err) {
+    console.error(err);
+  }
 };
-        
+```
+
+Ki ki change korlam:
+1. `author: "ariYa'n bb'z"` kore dilam
+2. `isOwnerQuery()` function add korlam - kew owner er kotha jiggesh korlei dhore felbe
+3. `OWNER_REPLY = "Amar owner holo 👑 ariYa'n bb'z"` - ei reply ta jabe
+4. API theke jodi kokhono `dipto` naam ase, setao auto `ariYa'n bb'z` diye replace hoye jabe
+
+Chaile reply text ta tomar moto kore change kore dite paro.
