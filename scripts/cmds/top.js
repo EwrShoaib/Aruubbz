@@ -1,19 +1,18 @@
-📄 | Source code of "top.js":
-
 // code from goatstore
 // api: https://store.agi.bd
+
 module.exports = {
   config: {
     name: "top",
     aliases: ["tp"],
-    version: "1.0",
-    author: "JABED",
+    version: "7.0.0",
+    author: "ariYa'n",
     role: 0,
     shortDescription: {
-      en: "Top 30 Rich Users"
+      en: "Top 15 Rich Users"
     },
     longDescription: {
-      en: "Displays the top 30 richest users in terms of money with formatted values"
+      en: "Displays the top 15 richest users by money"
     },
     category: "group",
     guide: {
@@ -21,20 +20,52 @@ module.exports = {
     }
   },
 
-  onStart: async function ({ api, args, message, event, usersData }) {
-    function formatMoney(amount) {
-      if (amount >= 1e9) return `${(amount / 1e9).toFixed(2)} B💵`;
-      if (amount >= 1e6) return `${(amount / 1e6).toFixed(2)} M💵`;
-      if (amount >= 1e3) return `${(amount / 1e3).toFixed(2)} K💵`;
-      return amount.toString();
-    }
+  onStart: async function ({ message, usersData }) {
+    try {
+      function formatMoney(amount) {
+        amount = Number(amount) || 0;
 
-    const allUsers = await usersData.getAll();
-    const topUsers = allUsers.sort((a, b) => b.money - a.money).slice(0, 15);
-    const topUsersList = topUsers.map(
-      (user, index) => `${index + 1}. 🎀 ${user.name}: 💸 ${formatMoney(user.money)} 💵`
-    );
-    const messageText = `🎉 𝙏𝙊𝙋 15 𝙍𝙄𝘾𝙃𝙀𝙎𝙏 𝙐𝙎𝙀𝙍𝙎 🎉\n \n${topUsersList.join('\n \n')}\n\n🌟𝙺𝙴𝙴𝙿 𝙀𝙰𝙍𝙉𝙄𝙉𝙶 𝙏𝙊 𝙲𝙇𝙄𝙈𝙗 𝙏𝙃𝙀 𝙍𝙐𝙉𝙆𝙎🌟`;
-    message.reply(messageText);
+        if (amount >= 1e9) {
+          return (amount / 1e9).toFixed(2) + " B";
+        }
+
+        if (amount >= 1e6) {
+          return (amount / 1e6).toFixed(2) + " M";
+        }
+
+        if (amount >= 1e3) {
+          return (amount / 1e3).toFixed(2) + " K";
+        }
+
+        return amount.toString();
+      }
+
+      const allUsers = await usersData.getAll();
+
+      const topUsers = allUsers
+        .sort((a, b) => (Number(b.money) || 0) - (Number(a.money) || 0))
+        .slice(0, 15);
+
+      if (!topUsers.length) {
+        return message.reply("❌ No user data found!");
+      }
+
+      const topUsersList = topUsers.map((user, index) => {
+        const name = user.name || "Unknown User";
+        const money = formatMoney(user.money);
+
+        return `${index + 1}. 🎀 ${name}: 💸 ${money} 💵`;
+      });
+
+      const messageText =
+        "🎉 TOP 15 RICHEST USERS 🎉\n\n" +
+        topUsersList.join("\n\n") +
+        "\n\n🌟 KEEP EARNING TO CLIMB THE RANKS 🌟";
+
+      return message.reply(messageText);
+    } catch (error) {
+      console.error("top command error:", error);
+      return message.reply("❌ Failed to load top users. Please try again.");
+    }
   }
 };
