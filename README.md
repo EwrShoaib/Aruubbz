@@ -25,12 +25,12 @@ html
 <tr> 
 <td width="55%"> 
 <pre> 
-👤 Nᴀᴍᴇ      : 亗^_^𝗔_𝗥_𝗜_𝗬_𝗔_𝗡^_^ 𝐁'𝐙 ✿᭄
+👤 Nᴀᴍᴇ      : ariYa'n bb'z 🚩🫀⁠彡✿᭄
 🧸 Nɪᴄᴋ      : AruuuH 
 🎂 Aɢᴇ       : 19+ 
-💘 Rᴇʟᴀᴛɪᴏɴ  : Married 
+💘 Rᴇʟᴀᴛɪᴏɴ  : Married 🎀
 🎓 Pʀᴏғᴇssɪᴏɴ: Business 
-📚 Eᴅᴜᴄᴀᴛɪᴏɴ : chudling pong 
+📚 Eᴅᴜᴄᴀᴛɪᴏɴ : inter 2nd year 
 🏡 Lᴏᴄᴀᴛɪᴏɴ  : Dhaka Keraniganj 
 </pre> 
 </td> 
