@@ -1,6 +1,6 @@
 html
 <div align="center"> 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:654ea3,100:eaafc9&height=180&section=header&text=亗^_^A_R_I_Y_A_N^_^%20BB'Z&fontSize=35&fontColor=ffffff&fontAlignY=38&animation=fadeIn&font=Fira+Code"> 
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:654ea3,100:eaafc9&height=180&section=header&text=ariYa'n bb'z 🚩🫀%20BB'Z&fontSize=35&fontColor=ffffff&fontAlignY=38&animation=fadeIn&font=Fira+Code"> 
 
 <p> 
 <a href="https://github.com/ariYanbbz"> 
