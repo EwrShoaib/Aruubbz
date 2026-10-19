@@ -480,7 +480,7 @@ module.exports = {
             selectedHourlyIndex = hourlyIndex;
 
             body =
-              "🌿 ISLAMIC HOURLY REMINDER\n\n" +
+              "🎀24/7 HOURLY REMINDER🎀\n\n" +
               `🕒 সময়: ${now.format("hh:mm A")}\n` +
               `📅 তারিখ: ${now.format("DD-MM-YYYY")}\n\n` +
               `${HOURLY_MESSAGES[now.hour() % HOURLY_MESSAGES.length]}\n\n` +
