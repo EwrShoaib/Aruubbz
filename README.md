@@ -26,13 +26,13 @@ html
 <tr> 
 <td width="55%"> 
 <pre> 
-👤 Nᴀᴍᴇ      : ariYa'n bb'z 🚩🫀⁠彡✿᭄
-🧸 Nɪᴄᴋ      : AruuuH 
+👤 Nᴀᴍᴇ      : Shoaib bb'z 🚩🫀⁠彡✿᭄
+🧸 Nɪᴄᴋ      : Xan
 🎂 Aɢᴇ       : 19+ 
-💘 Rᴇʟᴀᴛɪᴏɴ  : Married 🎀
-🎓 Pʀᴏғᴇssɪᴏɴ: Business 
+💘 Rᴇʟᴀᴛɪᴏɴ  : single pro max 🎀
+🎓 Pʀᴏғᴇssɪᴏɴ. tipa mane mobile
 📚 Eᴅᴜᴄᴀᴛɪᴏɴ : inter 2nd year 
-🏡 Lᴏᴄᴀᴛɪᴏɴ  : Dhaka Keraniganj 
+🏡 Lᴏᴄᴀᴛɪᴏɴ  : Dhaka
 </pre> 
 </td> 
 <td width="45%" align="center"> 
